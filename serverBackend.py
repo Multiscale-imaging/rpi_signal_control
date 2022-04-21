@@ -5,6 +5,7 @@ BUFFER_SIZE = 1024
 
 inst = 'not set'
 keys = {}
+override_dict = {}
 def setup(inst_, keys_):
     global inst, keys
     inst = inst_
@@ -12,31 +13,36 @@ def setup(inst_, keys_):
 
 def query(query):
     
-    # send query
-    inst.write(query)
-    
-    # collect return
-    out =''
-    while True:
-        line = inst.read_bytes(1)
-        if line == b'1`':
-            if len(out)>0:
+    '''
+    send query 
+        or
+    if key in override_dict.keys(), execute out=override_dict[key]()
+    '''
+    if query in override_dict.keys():
+        out = override_dict[query]()
+    else:
+        # send query
+        inst.write(query)
+
+        # collect return
+        out =''
+        while True:
+            line = inst.read_bytes(1)
+            if line == b'1`':
+                if len(out)>0:
+                    break
+                continue
+            out += line.decode('utf-8')
+            if b'\n' in line: # newline marks end of return
                 break
-            continue
-        out += line.decode('utf-8')
-        if b'\n' in line: # newline marks end of return
-            break
-            
     return out.strip('\n')
-
-
 
 def set_single_param(key, val):
     '''
     set single parameter on the signal generator
     '''
     if key in keys:
-        time.sleep(0.1)
+        #time.sleep(0.1)
         inst.write(key+' '+str(val))
         print(f'   set  {key}: {val}')
     else:
