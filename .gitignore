@@ -1,8 +1,3 @@
 .ipynb_checkpoints
 *.pyc
-tests/tests_Tryge/temp
-tests/tests_Tryge/strain_wave_grid2
-tests/tests_Tryge/traveling_strain_wave
-tests/tests_Tryge/traveling_strain_wave_111
-tests/tests_Tryge/traveling_strain_wave_220
 *.png
