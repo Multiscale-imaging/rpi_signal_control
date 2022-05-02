@@ -78,6 +78,9 @@ def data_to_dict(inp):
         parameters[key_val[0]] = key_val[1]
     return parameters
 
+def parse_parameters(parameters):
+    for key in parameters.keys():
+        set_single_param(key, parameters[key])
 
 
 class server(threading.Thread):
