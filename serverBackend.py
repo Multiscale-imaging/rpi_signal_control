@@ -124,3 +124,13 @@ class server(threading.Thread):
         '''
         val = query(key+'?')
         self.sock.send(str(key+' = '+ str(val)).encode())
+        
+import subprocess
+def get_ip(verbose = False):
+    ifconfig = str(subprocess.check_output(['ifconfig'])).split('\\n')
+    ip = ifconfig[1].split()[1] 
+    if verbose:
+        for line in ifconfig:
+            print(line)
+        print('ip = ',ip)
+    return ip
