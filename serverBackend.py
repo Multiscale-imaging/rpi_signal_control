@@ -6,11 +6,23 @@ BUFFER_SIZE = 1024
 inst = 'not set'
 keys = {}
 override_dict = {}
-def setup(inst_, keys_):
-    global inst, keys
+logfile = ''
+
+def setup(inst_, keys_, logfile_):
+    global inst, keys, logfile
     inst = inst_
     keys = keys_
-
+    logfile = logfile_
+    
+def fprint(string):
+    try:
+        with open(logfile,'a') as log:
+            log.write(string+'\n')
+    except:
+        with open(logfile,'w') as log:
+            log.write(string+'\n')
+    print(string)
+    
 def query(query):
     
     '''
@@ -35,6 +47,7 @@ def query(query):
             out += line.decode('utf-8')
             if b'\n' in line: # newline marks end of return
                 break
+    fprint(query+' '+out)
     return out.strip('\n')
 
 def set_single_param(key, val):
@@ -44,9 +57,9 @@ def set_single_param(key, val):
     if key in keys:
         #time.sleep(0.1)
         inst.write(key+' '+str(val))
-        print(f'   set  {key}: {val}')
+        fprint(f'   set  {key}: {val}')
     else:
-        print(f"ERROR: don't know what to do with {key}: {val}, skipping")
+        fprint(f"ERROR: don't know what to do with {key}: {val}, skipping")
     # i.e. parameters['chopper:phase'] = 10 --> chopper.phase = 10
     
 def set_params(parameters):
@@ -64,9 +77,9 @@ def get_params():
     '''
     parameters = {}
     for key in keys:
-        print(f'    query {key}?')
+        fprint(f'    query {key}?')
         parameters[key] = query(key+'?')
-        print(parameters[key])
+        fprint(parameters[key])
     return parameters
 
 
@@ -95,16 +108,16 @@ class server(threading.Thread):
         self.sock = socket
         self.addr = address
         self.start()
-
+        
     def run(self):
         data = self.sock.recv(BUFFER_SIZE).decode() # blocking until it recieves data
         now = datetime.now()
         current_time = now.strftime("%H:%M:%S")
-        print("Current Time =", current_time)
+        fprint("Current Time =", current_time)
         if data == '?':
             parameters = get_params()
             self.sock.send(str(parameters).encode())
-            print('    sent parameters')
+            fprint('    sent parameters')
         elif '=' in data:
             key = data.split('=')[0].strip()
             val = data.split('=')[1].strip()
@@ -124,7 +137,7 @@ class server(threading.Thread):
         '''
         val = query(key+'?')
         self.sock.send(str(key+' = '+ str(val)).encode())
-        
+    
 import subprocess
 def get_ip(verbose = False):
     ifconfig = str(subprocess.check_output(['ifconfig'])).split('\\n')
