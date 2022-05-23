@@ -110,26 +110,29 @@ class server(threading.Thread):
         self.start()
         
     def run(self):
-        data = self.sock.recv(BUFFER_SIZE).decode() # blocking until it recieves data
-        now = datetime.now()
-        current_time = now.strftime("%H:%M:%S")
-        fprint("Current Time =", current_time)
-        if data == '?':
-            parameters = get_params()
-            self.sock.send(str(parameters).encode())
-            fprint('    sent parameters')
-        elif '=' in data:
-            key = data.split('=')[0].strip()
-            val = data.split('=')[1].strip()
-            set_single_param(key, val)
-            self.reply_single(key)
-        elif data[0] == '?' or data[-1]=='?':
-            self.reply_single(data.strip('?'))
-        else:
-            parameters = data_to_dict(data)
-            parse_parameters(parameters)
-            #process(parameters)
-            #conn.close()
+        while True:
+            data = self.sock.recv(BUFFER_SIZE).decode() # blocking until it recieves data
+            if data == '':
+                continue
+            now = datetime.now()
+            current_time = now.strftime("%H:%M:%S")
+            fprint("Current Time = "+str(current_time))
+            if data == '?':
+                parameters = get_params()
+                self.sock.send(str(parameters).encode())
+                fprint('    sent parameters')
+            elif '=' in data:
+                key = data.split('=')[0].strip()
+                val = data.split('=')[1].strip()
+                set_single_param(key, val)
+                self.reply_single(key)
+            elif data[0] == '?' or data[-1]=='?':
+                self.reply_single(data.strip('?'))
+            else:
+                parameters = data_to_dict(data)
+                parse_parameters(parameters)
+                #process(parameters)
+                #conn.close()
             
     def reply_single(self, key):
         '''
