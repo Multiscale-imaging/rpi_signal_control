@@ -1,4 +1,10 @@
 # rpi_signal_control
+## to view the log
+use get_log.ipynb to read the log from the experiment
+## to use
+
+
+
 signal control of instruments we bring to beamtime.
 The signal generator (HMF2525) and oscilloscope (DSOX2014A) are connected via USB to a Raspberry pi. 
 The RPI is placed in the huch and conneted to the network. 
