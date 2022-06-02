@@ -2,6 +2,7 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 import datetime
+import pickle
 
 class OscilloscopeEvent:
     def __init__(self, time, ch1, ch2, ch3):
@@ -24,22 +25,29 @@ class OscilloscopeEvent:
 times = []
 events = []
 probe_events = []
-with open('oscilloscope.log','r') as f:
-    past_time = 0
-    for i, line in enumerate(f):
-        if i<800:
-            continue
-        if 'Current Time' in line:
-            t = line.split(' ')[-1].split(':')
-            past_time = float(t[0])*3600+float(t[1])*60+float(t[2])
-        if 'AvgC1?' in line:
-            val = line.split()
-            probe_events.append(past_time)
-        if 'AvgC1C2' in line:
-            val = line.split()
-            val.append('0')
-            events.append([past_time,float(val[1][:-1]), float(val[2].strip()), float(val[3].strip())])
 
+try: # try reading actual log
+    with open('oscilloscope.log','r') as f:
+        past_time = 0
+        for i, line in enumerate(f):
+            if i<800:
+                continue
+            if 'Current Time' in line:
+                t = line.split(' ')[-1].split(':')
+                past_time = float(t[0])*3600+float(t[1])*60+float(t[2])
+            if 'AvgC1?' in line:
+                val = line.split()
+                probe_events.append(past_time)
+            if 'AvgC1C2' in line:
+                val = line.split()
+                val.append('0')
+                events.append([past_time,float(val[1][:-1]), float(val[2].strip(',')), float(val[3].strip())])
+    with open('oscilloscope.log.pickle','wb') as f:
+        pickle.dump((probe_events, events), f)
+except: # try reading pickled log
+    with open('oscilloscope.log.pickle','rb') as f:
+        probe_events, events = pickle.load(f)
+        
 events = np.array(events)
 date_string = f'2022-05-24 00:00:00'
 date_0 = datetime.datetime.fromisoformat(date_string)
@@ -123,11 +131,10 @@ def plot_near(datetime_as_string, window_in_s = 300):
 
     fig, ax = plt.subplots(1,1,figsize = (20,3), dpi = 300)
     ax.plot(dates, V, color = [0,0.3,1], lw = 1, label = 'Ch1')   
-    try:
-        ax.plot(dates, V2*10, color = [0,0.1,0.5], lw = 1, label = 'Ch3*10')  
-    except:
-        None
-    ax.set_ylabel('Ch1 [V], Ch3*10 [V]', color = [0,0.3,1])  
+        
+    ax.plot(dates, np.array(V2), color = [0,0.1,0.5], lw = 1, label = 'Ch3')
+        
+    ax.set_ylabel('Ch1 [V], Ch3 [V]', color = [0,0.3,1])  
     ax.set_xlabel('Date, Time')
     ax.legend(loc = 3)
     
@@ -158,3 +165,26 @@ def plot_near(datetime_as_string, window_in_s = 300):
             mm_I.append(event.current)
     ax2.plot(mm_dates, mm_I, 'x-', color = [1,0.3,0],lw = 1, label = 'multimeter')   
     ax2.legend(loc = 4)
+    
+def get_near(datetime_as_string, window_in_s = 300):
+    relevant_time = datetime.datetime.fromisoformat(datetime_as_string)
+    mask = np.array([abs(event.time-relevant_time)<datetime.timedelta(seconds = window_in_s) for event in osc_events], dtype = bool)
+    dates = []
+    V = []
+    I = []
+    V2 = []
+    for i, event in enumerate(osc_events):
+        if mask[i]:
+            dates.append(event.time)
+            V.append(event.ch1)
+            I.append(event.ch2)
+            V2.append(event.ch3)
+    mm_mask = np.array([abs(event.time-relevant_time)<datetime.timedelta(seconds = window_in_s) for event in multimeter_events], dtype = bool)
+    mm_dates = []
+    mm_I = []
+    for i, event in enumerate(multimeter_events):
+        if mm_mask[i]:
+            mm_dates.append(event.time)
+            mm_I.append(event.current)
+            
+    return dates, np.array(V), np.array(I), np.array(V2), mm_dates, np.array(mm_I)
